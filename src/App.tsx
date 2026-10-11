@@ -60,9 +60,16 @@ const speak = (text) => {
   }
 };
 
+// Tracks whether the next occurrence of a question type should be Hard (true) or Easy (false)
+const questionDifficulty = { add: false, sub: false, pattern: false, order: false, shapes: false, countBy: false, groups: false };
+
 const generateQuestion = () => {
   const types = ['add', 'sub', 'pattern', 'order', 'shapes', 'countBy', 'groups'];
   const type = types[Math.floor(Math.random() * types.length)];
+  
+  // Alternate difficulty for this specific question type
+  const isHard = questionDifficulty[type];
+  questionDifficulty[type] = !questionDifficulty[type];
 
   let questionText = '';
   let options = [];
@@ -72,46 +79,81 @@ const generateQuestion = () => {
 
   switch (type) {
     case 'add': {
-      const a = Math.floor(Math.random() * 15) + 1;
-      const b = Math.floor(Math.random() * (20 - a)) + 1; 
-      correctAnswer = (a + b).toString();
-      questionText = `What is ${a} + ${b}?`;
-      hint = `Start at ${a} and count up ${b} more!`;
-      options = [correctAnswer, (a + b + 1).toString(), (a + b - 1).toString(), (a + b + 2).toString()];
+      if (isHard) {
+        const a = Math.floor(Math.random() * 21) + 9; // 9 to 29
+        const b = Math.floor(Math.random() * 21) + 9; // 9 to 29
+        correctAnswer = (a + b).toString();
+        questionText = `What is ${a} + ${b}?`;
+        hint = `Try adding the tens, then the ones!`;
+        options = [correctAnswer, (a + b + 10).toString(), (a + b - 2).toString(), (a + b + 2).toString()];
+      } else {
+        const a = Math.floor(Math.random() * 15) + 1;
+        const b = Math.floor(Math.random() * (20 - a)) + 1; 
+        correctAnswer = (a + b).toString();
+        questionText = `What is ${a} + ${b}?`;
+        hint = `Start at ${a} and count up ${b} more!`;
+        options = [correctAnswer, (a + b + 1).toString(), (a + b - 1).toString(), (a + b + 2).toString()];
+      }
       break;
     }
     case 'sub': {
-      const a = Math.floor(Math.random() * 8) + 3; // 3 to 10
-      const b = Math.floor(Math.random() * a) + 1;
-      correctAnswer = (a - b).toString();
-      questionText = `What is ${a} - ${b}?`;
-      hint = `Start at ${a} and count backward ${b} steps.`;
-      let bad1 = a - b + 1;
-      let bad2 = Math.max(0, a - b - 1);
-      if (bad2 === a - b) bad2 = a - b + 2;
-      options = [correctAnswer, bad1.toString(), bad2.toString(), (a - b + 3).toString()];
+      if (isHard) {
+        const a = Math.floor(Math.random() * 11) + 10; // 10 to 20
+        const b = Math.floor(Math.random() * (a - 1)) + 1; // up to a-1
+        correctAnswer = (a - b).toString();
+        questionText = `What is ${a} - ${b}?`;
+        hint = `Start at ${a} and count backward ${b} steps.`;
+        options = [correctAnswer, (a - b + 2).toString(), (a - b - 1).toString(), (a - b + 5).toString()];
+      } else {
+        const a = Math.floor(Math.random() * 8) + 3; // 3 to 10
+        const b = Math.floor(Math.random() * a) + 1;
+        correctAnswer = (a - b).toString();
+        questionText = `What is ${a} - ${b}?`;
+        hint = `Start at ${a} and count backward ${b} steps.`;
+        let bad1 = a - b + 1;
+        let bad2 = Math.max(0, a - b - 1);
+        if (bad2 === a - b) bad2 = a - b + 2;
+        options = [correctAnswer, bad1.toString(), bad2.toString(), (a - b + 3).toString()];
+      }
       break;
     }
     case 'pattern': {
-      const patterns = [
-        { seq: ['🔴', '🔵', '🔴', '🔵', '🔴'], next: '🔵', hint: "It alternates: Red, Blue, Red, Blue..." },
-        { seq: ['⭐', '⭐', '🌙', '⭐', '⭐'], next: '🌙', hint: "Pattern goes: Star, Star, Moon..." },
-        { seq: ['🚗', '🚕', '🚗', '🚕', '🚗'], next: '🚕', hint: "Red car, Yellow car, Red car..." },
-        { seq: ['2', '4', '6', '8'], next: '10', hint: "We are skip counting by 2s! 8 + 2 = 10" },
-        { seq: ['5', '10', '15', '20'], next: '25', hint: "Counting by 5s! 20 + 5 = 25" }
-      ];
-      const p = patterns[Math.floor(Math.random() * patterns.length)];
-      questionText = `What comes next in the pattern? ${p.seq.join(', ')}`;
-      correctAnswer = p.next;
-      hint = p.hint;
+      const pool = ['🔴', '🔵', '⭐', '🌙', '🍎', '🍌', '🚗', '🚕'];
+      const shuffled = pool.sort(() => 0.5 - Math.random());
       
-      if (p.next === '10' || p.next === '25') {
-          const val = parseInt(p.next, 10);
-          options = [p.next, (val - 2).toString(), (val + 2).toString(), (val + 5).toString()];
+      let unit;
+      if (isHard) {
+        const units = [
+            [0,1,1], // abb
+            [0,1,2,2,3], // abccd
+            [0,1,1,2,2,3], // abbccd
+            [0,1,2,3,4,2,3,4], // abcdecde
+            [0,0,0,1,1,2] // aaabbc
+        ];
+        unit = units[Math.floor(Math.random() * units.length)];
       } else {
-          options = ['🔴', '🔵', '⭐', '🌙', '🚗', '🚕'].sort(() => 0.5 - Math.random()).slice(0, 4);
-          if (!options.includes(correctAnswer)) options[0] = correctAnswer;
+        const units = [
+            [0,1], // ab
+            [0,1,2], // abc
+        ];
+        unit = units[Math.floor(Math.random() * units.length)];
       }
+      
+      const displayLen = isHard ? unit.length + 2 : unit.length * 2; 
+      const seqIds = [];
+      for(let i=0; i<displayLen; i++) {
+          seqIds.push(unit[i % unit.length]);
+      }
+      const nextId = unit[displayLen % unit.length];
+      
+      const seqStr = seqIds.map(idx => shuffled[idx]);
+      correctAnswer = shuffled[nextId];
+      
+      questionText = `What comes next in the pattern? ${seqStr.join(', ')}`;
+      hint = `Look closely at how the symbols repeat!`;
+      
+      options = shuffled.slice(0, 4);
+      if (!options.includes(correctAnswer)) options[0] = correctAnswer;
       break;
     }
     case 'order': {
@@ -133,19 +175,26 @@ const generateQuestion = () => {
       break;
     }
     case 'shapes': {
-      const shapes = ['Circle', 'Triangle', 'Square', 'Cube', 'Sphere', 'Cylinder'];
-      const target = shapes[Math.floor(Math.random() * shapes.length)];
-      questionText = `Which word says "${target}"?`;
-      correctAnswer = target;
-      hint = `Listen carefully to the word: ${target}.`;
-      options = shapes.sort(() => 0.5 - Math.random()).slice(0, 4);
+      const shapeMap = { 'Circle': '🔴', 'Triangle': '🔺', 'Square': '🟦', 'Cube': '🧊', 'Sphere': '🔮' };
+      const shapeNames = Object.keys(shapeMap);
+      const target = shapeNames[Math.floor(Math.random() * shapeNames.length)];
+      questionText = `Select the ${target}.`;
+      correctAnswer = shapeMap[target];
+      hint = `Look for the picture of a ${target}.`;
+      options = Object.values(shapeMap).sort(() => 0.5 - Math.random()).slice(0, 4);
       if (!options.includes(correctAnswer)) options[0] = correctAnswer;
       break;
     }
     case 'countBy': {
-      const step = [2, 5, 10][Math.floor(Math.random() * 3)];
+      let step;
+      if (isHard) {
+        step = Math.floor(Math.random() * 20) + 6; // skip count by 6 to 25
+      } else {
+        step = [2, 5, 10][Math.floor(Math.random() * 3)];
+      }
+      
       const start = step * (Math.floor(Math.random() * 4) + 1);
-      const seq: (number | string)[] = [start, start + step, start + (step * 2), start + (step * 3)];
+      const seq = [start, start + step, start + (step * 2), start + (step * 3)];
       correctAnswer = (start + (step * 2)).toString();
       seq[2] = '___';
       
@@ -156,20 +205,39 @@ const generateQuestion = () => {
       break;
     }
     case 'groups': {
-      const g = Math.floor(Math.random() * 3) + 2; 
-      const n = Math.floor(Math.random() * 3) + 2; 
-      if (g * n > 15) { 
-        correctAnswer = (2 * 3).toString(); 
-        visual = { type: 'groups', groups: 2, itemsPerGroup: 3, emoji: '🍎' };
-      } else {
+      if (isHard) {
+        const containers = ['buckets', 'boxes', 'baskets', 'bags'];
+        const items = ['apples', 'toys', 'cars', 'candies'];
+        const c = containers[Math.floor(Math.random() * containers.length)];
+        const i = items[Math.floor(Math.random() * items.length)];
+        
+        let g = Math.floor(Math.random() * 6) + 3; 
+        let n = Math.floor(Math.random() * 6) + 3; 
+        // Ensure total is between 10 and 40
+        while (g * n < 10 || g * n > 40) {
+           g = Math.floor(Math.random() * 6) + 3;
+           n = Math.floor(Math.random() * 6) + 3;
+        }
+        
         correctAnswer = (g * n).toString();
-        const emojis = ['🍎', '⭐', '🚗', '🍪', '⚽'];
-        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-        visual = { type: 'groups', groups: g, itemsPerGroup: n, emoji };
+        questionText = `If there are ${g} ${c} and each ${c} has ${n} ${i} in it, how many ${i} are there in total?`;
+        hint = `Try counting by ${n}s, ${g} times!`;
+        visual = null;
+      } else {
+        const g = Math.floor(Math.random() * 3) + 2; 
+        const n = Math.floor(Math.random() * 3) + 2; 
+        if (g * n > 10) { 
+          correctAnswer = (2 * 3).toString(); 
+          visual = { type: 'groups', groups: 2, itemsPerGroup: 3, emoji: '🍎' };
+        } else {
+          correctAnswer = (g * n).toString();
+          const emojis = ['🍎', '⭐', '🚗', '🍪', '⚽'];
+          const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+          visual = { type: 'groups', groups: g, itemsPerGroup: n, emoji };
+        }
+        questionText = "How many items are there in total?";
+        hint = `Count all the items inside each group!`;
       }
-      
-      questionText = "How many items are there in total?";
-      hint = `Count all the items inside each group!`;
       
       const val = parseInt(correctAnswer, 10);
       options = [correctAnswer, (val + 1).toString(), (val - 1).toString(), (val + 2).toString()];
@@ -424,6 +492,7 @@ export default function App() {
   const [coins, setCoins] = useState(100);
   const [progress, setProgress] = useState(0);
   const [firstTry, setFirstTry] = useState(true);
+  const [showCheckmark, setShowCheckmark] = useState(false);
 
   // Hardcoded to always use the awesome Muscle Car
   const [carConfig, setCarConfig] = useState({
@@ -466,29 +535,56 @@ export default function App() {
     setCurrentQuestion(generateQuestion());
     setShowHint(false);
     setFirstTry(true);
+    setShowCheckmark(false);
     setView('quiz');
   };
 
-  const handleAnswer = (selected) => {
-    if (selected === currentQuestion.answer) {
-      const newProgress = progress + 1;
-      
-      // ONLY award 5 coins if they got it right on the very first try for this question
-      if (firstTry) {
-        setCoins(prev => prev + 5);
-      }
+  const playBell = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1046.50, ctx.currentTime); // C6 Note
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1);
+      osc.start();
+      osc.stop(ctx.currentTime + 1);
+    } catch(e) {
+      console.log("Audio not supported");
+    }
+  };
 
-      if (newProgress >= 20) {
-        setProgress(0);
-        setCoins(prev => prev + 50); // Bonus 50 for finishing round
-        setView('success');
-        speak("Awesome work Locky! You unlocked the garage!");
-      } else {
-        setProgress(newProgress);
-        setCurrentQuestion(generateQuestion());
-        setShowHint(false);
-        setFirstTry(true); // Reset firstTry flag for the new question
-      }
+  const handleAnswer = (selected) => {
+    if (showCheckmark) return; // Prevent clicking while checkmark is showing
+
+    if (selected === currentQuestion.answer) {
+      setShowCheckmark(true);
+      playBell();
+      
+      setTimeout(() => {
+        setShowCheckmark(false);
+        const newProgress = progress + 1;
+        
+        // ONLY award 5 coins if they got it right on the very first try for this question
+        if (firstTry) {
+          setCoins(prev => prev + 5);
+        }
+
+        if (newProgress >= 20) {
+          setProgress(0);
+          setCoins(prev => prev + 50); // Bonus 50 for finishing round
+          setView('success');
+          speak("Awesome work Locky! You unlocked the garage!");
+        } else {
+          setProgress(newProgress);
+          setCurrentQuestion(generateQuestion());
+          setShowHint(false);
+          setFirstTry(true); // Reset firstTry flag for the new question
+        }
+      }, 1000);
     } else {
       setShowHint(true);
       setFirstTry(false); // They missed the first try, so they won't get coins for this question
@@ -580,8 +676,15 @@ export default function App() {
 
         {/* Right Side Question Area */}
         <div className="w-full landscape:w-2/3 flex flex-col items-center justify-center p-4">
-          <div className="bg-white w-full max-w-3xl rounded-[2.5rem] shadow-2xl p-8 border-8 border-sky-200 flex flex-col items-center">
+          <div className="bg-white w-full max-w-3xl rounded-[2.5rem] shadow-2xl p-8 border-8 border-sky-200 flex flex-col items-center relative overflow-hidden">
             
+            {/* Success Overlay */}
+            {showCheckmark && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur-sm transition-all duration-300">
+                <Check className="w-48 h-48 text-emerald-500 drop-shadow-2xl animate-bounce" strokeWidth={4} />
+              </div>
+            )}
+
             <div className="flex items-center w-full mb-6 gap-4">
               <button 
                 onClick={() => speak(currentQuestion.text)}
