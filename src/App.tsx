@@ -194,7 +194,7 @@ const generateQuestion = () => {
       }
       
       const start = step * (Math.floor(Math.random() * 4) + 1);
-      const seq = [start, start + step, start + (step * 2), start + (step * 3)];
+      const seq: (number | string)[] = [start, start + step, start + (step * 2), start + (step * 3)];
       correctAnswer = (start + (step * 2)).toString();
       seq[2] = '___';
       
@@ -541,7 +541,7 @@ export default function App() {
 
   const playBell = () => {
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
